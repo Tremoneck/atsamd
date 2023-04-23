@@ -15,7 +15,7 @@ version = "0.7"
 optional = true
 
 [dependencies.atsamd-hal]
-version = "0.14"
+path = "../../hal"
 default-features = false
 
 [dependencies.usb-device]
@@ -31,7 +31,6 @@ panic-semihosting = "0.5"
 default = ["rt", "atsamd-hal/samd21g"]
 rt = ["cortex-m-rt", "atsamd-hal/samd21g-rt"]
 usb = ["atsamd-hal/usb", "usb-device"]
-unproven = ["atsamd-hal/unproven"]
 use_semihosting = []
 
 # for cargo flash

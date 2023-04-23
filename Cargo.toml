@@ -1,0 +1,7 @@
+[workspace]
+
+members = [
+    "boards/arduino_mkr1000",
+
+    "hal"
+]
