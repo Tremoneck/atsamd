@@ -20,7 +20,7 @@ name = "atsamd-hal"
 readme = "README.md"
 repository = "https://github.com/atsamd-rs/atsamd"
 rust-version = "1.65"
-version = "0.15.1"
+version = "0.16.0"
 
 [package.metadata.docs.rs]
 features = ["samd21g", "samd21g-rt", "unproven", "usb"]
@@ -31,11 +31,11 @@ features = ["samd21g", "samd21g-rt", "unproven", "usb"]
 
 [dependencies]
 aes = "0.7.5"
-bitfield = "0.13"
-bitflags = "1.2.1"
+bitfield = "0.14"
+bitflags = "2.0"
 cipher = "0.3"
 cortex-m = "0.7"
-embedded-hal = "0.2"
+embedded-hal = "1.0.0-alpha.10"
 modular-bitfield = "0.11"
 nb = "1.0"
 num-traits = {version = "0.2.14", default-features = false}
@@ -173,15 +173,13 @@ same54p-rt = ["same54p", "atsame54p/rt"]
 # Many essential traits within embedded-hal are locked behind the `unproven`
 # feature. This is unfortunate, but it should be resolved with embedded-hal 1.0.
 # Until then, we make `unproven` a default feature.
-default = ["unproven"]
 
 can = ["mcan-core"]
-dma = ["unproven"]
+dma = []
 enable_unsafe_aes_newblock_cipher = []
 max-channels = ["dma"]
 rtic = ["rtic-monotonic", "fugit"]
 sdmmc = ["embedded-sdmmc"]
-unproven = ["embedded-hal/unproven"]
 usb = ["usb-device"]
 use_rtt = ["jlink_rtt"]
 
