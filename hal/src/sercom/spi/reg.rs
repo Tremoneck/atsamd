@@ -8,9 +8,9 @@ use crate::pac::sercom0::SPI;
 use crate::pac::sercom0::SPIM;
 
 #[cfg(feature = "thumbv6")]
-use crate::pac::sercom0::spi::ctrla::MODE_A;
+use crate::pac::sercom0::spi::ctrla::MODESELECT_A;
 #[cfg(feature = "thumbv7")]
-use crate::pac::sercom0::spim::ctrla::MODE_A;
+use crate::pac::sercom0::spim::ctrla::MODESELECT_A;
 
 use crate::sercom::Sercom;
 use crate::time::Hertz;
@@ -78,7 +78,7 @@ impl<S: Sercom> Registers<S> {
     /// in each SPI transaction. Due to a hardware bug, ICSPACE must be at least
     /// one. See the silicon errata for more details.
     #[inline]
-    pub fn set_op_mode(&mut self, mode: MODE_A, mssen: bool) {
+    pub fn set_op_mode(&mut self, mode: MODESELECT_A, mssen: bool) {
         self.spi().ctrla.modify(|_, w| w.mode().variant(mode));
         self.spi().ctrlb.modify(|_, w| w.mssen().bit(mssen));
         #[cfg(feature = "thumbv7")]
@@ -194,7 +194,7 @@ impl<S: Sercom> Registers<S> {
     /// Get the bit order of transmission (MSB/LSB first)
     #[inline]
     pub fn get_bit_order(&self) -> BitOrder {
-        let order = self.spi().ctrla.read().dord().bits();
+        let order = self.spi().ctrla.read().dord().bit();
         match order {
             false => BitOrder::MsbFirst,
             true => BitOrder::LsbFirst,
@@ -215,15 +215,14 @@ impl<S: Sercom> Registers<S> {
     #[inline]
     pub fn get_baud(&mut self, freq: Hertz) -> Hertz {
         let baud = self.spi().baud.read().baud().bits() as u32 + 1;
-        Hertz(freq.0 / 2 / baud)
+        freq / 2 / baud
     }
 
     /// Set the baud rate
     #[inline]
-    pub fn set_baud(&mut self, freq: Hertz, baud: impl Into<Hertz>) {
-        let baud = baud.into().0;
-        let baud = if baud == 0 { 1 } else { baud };
-        let bits = (freq.0 / 2 / baud).saturating_sub(1);
+    pub fn set_baud(&mut self, freq: Hertz, baud: Hertz) {
+        let baud = baud.to_Hz().max(1);
+        let bits = (freq.to_Hz() / 2 / baud).saturating_sub(1);
         let bits = bits.try_into().unwrap_or(u8::MAX);
         self.spi()
             .baud

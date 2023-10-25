@@ -23,14 +23,14 @@ use rtic_monotonic::Monotonic;
 // SAMx5x imports
 #[cfg(feature = "thumbv7")]
 use crate::pac::{
-    rtc::mode0::ctrla::PRESCALER_A, rtc::mode0::CTRLA as MODE0_CTRLA,
+    rtc::mode0::ctrla::PRESCALERSELECT_A, rtc::mode0::CTRLA as MODE0_CTRLA,
     rtc::mode2::CTRLA as MODE2_CTRLA, MCLK as PM,
 };
 
 // SAMD11/SAMD21 imports
 #[cfg(feature = "thumbv6")]
 use crate::pac::{
-    rtc::mode0::ctrl::PRESCALER_A, rtc::mode0::CTRL as MODE0_CTRLA,
+    rtc::mode0::ctrl::PRESCALERSELECT_A, rtc::mode0::CTRL as MODE0_CTRLA,
     rtc::mode2::CTRL as MODE2_CTRLA, PM,
 };
 
@@ -191,7 +191,11 @@ impl<Mode: RtcMode> Rtc<Mode> {
     /// clock to be running at 1024 Hz.
     pub fn into_clock_mode(mut self) -> Rtc<ClockMode> {
         // The max divisor is 1024, so to get 1 Hz, we need a 1024 Hz source.
-        assert_eq!(self.rtc_clock_freq.0, 1024_u32, "RTC clk not 1024 Hz!");
+        assert_eq!(
+            self.rtc_clock_freq.to_Hz(),
+            1024_u32,
+            "RTC clk not 1024 Hz!"
+        );
 
         self.sync();
         self.enable(false);
@@ -275,7 +279,7 @@ impl Rtc<Count32Mode> {
         &mut self,
         timeout: T,
     ) -> &Self {
-        let params = TimerParams::new_us(timeout, self.rtc_clock_freq.0);
+        let params = TimerParams::new_us(timeout, self.rtc_clock_freq);
         let divider = params.divider;
 
         // Disable the timer while we reconfigure it
@@ -345,7 +349,7 @@ impl CountDown for Rtc<Count32Mode> {
     where
         T: Into<Self::Time>,
     {
-        let params = TimerParams::new_us(timeout, self.rtc_clock_freq.0);
+        let params = TimerParams::new_us(timeout, self.rtc_clock_freq);
         let divider = params.divider;
         let cycles = params.cycles;
 
@@ -408,29 +412,26 @@ impl TimeSource for Rtc<ClockMode> {
 /// Helper type for computing cycles and divider given frequency
 #[derive(Debug, Clone, Copy)]
 pub struct TimerParams {
-    pub divider: PRESCALER_A,
+    pub divider: PRESCALERSELECT_A,
     pub cycles: u32,
 }
 
 impl TimerParams {
     /// calculates RTC timer paramters based on the input frequency-based
     /// timeout.
-    pub fn new<T>(timeout: T, src_freq: u32) -> Self
-    where
-        T: Into<Hertz>,
-    {
+    pub fn new(timeout: impl Into<Hertz>, src_freq: impl Into<Hertz>) -> Self {
         let timeout = timeout.into();
-        let ticks: u32 = src_freq / timeout.0.max(1);
+        let src_freq = src_freq.into();
+        let ticks: u32 = src_freq.to_Hz() / timeout.to_Hz().max(1);
         Self::new_from_ticks(ticks)
     }
 
     /// calculates RTC timer paramters based on the input period-based timeout.
-    pub fn new_us<T>(timeout: T, src_freq: u32) -> Self
-    where
-        T: Into<Nanoseconds>,
-    {
+    pub fn new_us(timeout: impl Into<Nanoseconds>, src_freq: impl Into<Hertz>) -> Self {
         let timeout = timeout.into();
-        let ticks: u32 = (timeout.0 as u64 * src_freq as u64 / 1_000_000_000_u64) as u32;
+        let src_freq = src_freq.into();
+        let ticks: u32 =
+            (timeout.to_nanos() as u64 * src_freq.to_Hz() as u64 / 1_000_000_000_u64) as u32;
         Self::new_from_ticks(ticks)
     }
 
@@ -439,19 +440,19 @@ impl TimerParams {
     fn new_from_ticks(ticks: u32) -> Self {
         let divider_value = ((ticks >> 16) + 1).next_power_of_two();
         let divider = match divider_value {
-            1 => PRESCALER_A::DIV1,
-            2 => PRESCALER_A::DIV2,
-            4 => PRESCALER_A::DIV4,
-            8 => PRESCALER_A::DIV8,
-            16 => PRESCALER_A::DIV16,
-            32 => PRESCALER_A::DIV32,
-            64 => PRESCALER_A::DIV64,
-            128 => PRESCALER_A::DIV128,
-            256 => PRESCALER_A::DIV256,
-            512 => PRESCALER_A::DIV512,
-            1024 => PRESCALER_A::DIV1024,
-            _ => PRESCALER_A::DIV1024, /* would be nice to catch this at compile time
-                                        * (rust-lang/rust#51999) */
+            1 => PRESCALERSELECT_A::DIV1,
+            2 => PRESCALERSELECT_A::DIV2,
+            4 => PRESCALERSELECT_A::DIV4,
+            8 => PRESCALERSELECT_A::DIV8,
+            16 => PRESCALERSELECT_A::DIV16,
+            32 => PRESCALERSELECT_A::DIV32,
+            64 => PRESCALERSELECT_A::DIV64,
+            128 => PRESCALERSELECT_A::DIV128,
+            256 => PRESCALERSELECT_A::DIV256,
+            512 => PRESCALERSELECT_A::DIV512,
+            1024 => PRESCALERSELECT_A::DIV1024,
+            _ => PRESCALERSELECT_A::DIV1024, /* would be nice to catch this at compile time
+                                              * (rust-lang/rust#51999) */
         };
 
         let cycles: u32 = ticks / divider_value as u32;

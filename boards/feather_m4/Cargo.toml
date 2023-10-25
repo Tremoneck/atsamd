@@ -1,6 +1,6 @@
 [package]
 name = "feather_m4"
-version = "0.10.1"
+version = "0.11.0"
 edition = "2021"
 authors = ["Theodore DeRego <tderego94@gmail.com>"]
 description = "Board Support crate for the Adafruit Feather M4"
@@ -19,9 +19,13 @@ chip = "ATSAMD51J19A"
 version = "0.7"
 optional = true
 
+[dependencies.cortex-m]
+version = "0.7"
+features = ["critical-section-single-core"]
+
 [dependencies.atsamd-hal]
 path = "../../hal"
-version = "0.15.1"
+version = "0.16.0"
 default-features = false
 
 [dependencies.usb-device]
@@ -29,7 +33,6 @@ version = "0.2"
 optional = true
 
 [dev-dependencies]
-cortex-m = "0.7"
 usbd-serial = "0.1"
 cortex-m-rtic = "0.6.0-rc.2"
 panic-halt = "0.2"

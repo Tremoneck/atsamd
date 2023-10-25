@@ -93,7 +93,7 @@
 
 use core::marker::PhantomData;
 
-use crate::pac::osc32kctrl::rtcctrl::RTCSEL_A;
+use crate::pac::osc32kctrl::rtcctrl::RTCSELSELECT_A;
 use crate::pac::osc32kctrl::RTCCTRL;
 use crate::pac::OSC32KCTRL;
 
@@ -168,11 +168,11 @@ pub enum DynRtcSourceId {
     Xosc32k,
 }
 
-impl From<DynRtcSourceId> for RTCSEL_A {
+impl From<DynRtcSourceId> for RTCSELSELECT_A {
     #[inline]
     fn from(source: DynRtcSourceId) -> Self {
         use DynRtcSourceId::*;
-        use RTCSEL_A::*;
+        use RTCSELSELECT_A::*;
         match source {
             OscUlp1k => ULP1K,
             OscUlp32k => ULP32K,
@@ -217,19 +217,19 @@ pub trait RtcSourceId {
 
 impl RtcSourceId for OscUlp1kId {
     const DYN: DynRtcSourceId = DynRtcSourceId::OscUlp1k;
-    const FREQ: Hertz = Hertz(1024);
+    const FREQ: Hertz = Hertz::Hz(1024);
 }
 impl RtcSourceId for OscUlp32kId {
     const DYN: DynRtcSourceId = DynRtcSourceId::OscUlp32k;
-    const FREQ: Hertz = Hertz(32_768);
+    const FREQ: Hertz = Hertz::Hz(32_768);
 }
 impl RtcSourceId for Xosc1kId {
     const DYN: DynRtcSourceId = DynRtcSourceId::Xosc1k;
-    const FREQ: Hertz = Hertz(1024);
+    const FREQ: Hertz = Hertz::Hz(1024);
 }
 impl RtcSourceId for Xosc32kId {
     const DYN: DynRtcSourceId = DynRtcSourceId::Xosc32k;
-    const FREQ: Hertz = Hertz(32_768);
+    const FREQ: Hertz = Hertz::Hz(32_768);
 }
 
 //==============================================================================

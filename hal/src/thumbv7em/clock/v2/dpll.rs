@@ -239,12 +239,13 @@
 
 use core::marker::PhantomData;
 
+use fugit::RateExtU32;
 use typenum::U0;
 
 use crate::pac::oscctrl::dpll::{dpllstatus, dpllsyncbusy, DPLLCTRLA, DPLLCTRLB, DPLLRATIO};
 use crate::pac::oscctrl::DPLL;
 
-use crate::pac::oscctrl::dpll::dpllctrlb::REFCLK_A;
+use crate::pac::oscctrl::dpll::dpllctrlb::REFCLKSELECT_A;
 
 use crate::time::Hertz;
 use crate::typelevel::{Decrement, Increment, Sealed};
@@ -478,13 +479,13 @@ pub enum DynDpllSourceId {
     Xosc32k,
 }
 
-impl From<DynDpllSourceId> for REFCLK_A {
+impl From<DynDpllSourceId> for REFCLKSELECT_A {
     fn from(source: DynDpllSourceId) -> Self {
         match source {
-            DynDpllSourceId::Pclk => REFCLK_A::GCLK,
-            DynDpllSourceId::Xosc0 => REFCLK_A::XOSC0,
-            DynDpllSourceId::Xosc1 => REFCLK_A::XOSC1,
-            DynDpllSourceId::Xosc32k => REFCLK_A::XOSC32,
+            DynDpllSourceId::Pclk => REFCLKSELECT_A::GCLK,
+            DynDpllSourceId::Xosc0 => REFCLKSELECT_A::XOSC0,
+            DynDpllSourceId::Xosc1 => REFCLKSELECT_A::XOSC1,
+            DynDpllSourceId::Xosc32k => REFCLKSELECT_A::XOSC32,
         }
     }
 }
@@ -550,6 +551,7 @@ struct Settings {
 /// Store and retrieve [`Dpll`] settings for different reference clocks
 mod settings {
     use super::super::pclk;
+    use super::RateExtU32;
     use super::{DpllId, GclkId, Hertz};
 
     /// [`Dpll`] settings when referenced to a [`Pclk`]
@@ -606,7 +608,7 @@ mod settings {
     impl Reference for Xosc32k {
         #[inline]
         fn freq(&self) -> Hertz {
-            Hertz(32_768)
+            32_768.Hz()
         }
         #[inline]
         fn prediv(&self) -> u16 {
@@ -888,20 +890,20 @@ where
     }
 
     #[inline]
-    fn input_freq(&self) -> u32 {
+    fn input_freq(&self) -> Hertz {
         use settings::Reference;
-        self.reference.freq().0 / self.reference.prediv() as u32
+        self.reference.freq() / self.reference.prediv() as u32
     }
 
     #[inline]
-    fn output_freq(&self) -> u32 {
+    fn output_freq(&self) -> Hertz {
         self.input_freq() * (self.settings.mult as u32 + self.settings.frac as u32 / 32)
     }
 
     /// Return the output frequency of the [`Dpll`]
     #[inline]
     pub fn freq(&self) -> Hertz {
-        Hertz(self.output_freq())
+        self.output_freq()
     }
 
     /// Enable the [`Dpll`], so that it can be used as a clock [`Source`]
@@ -923,8 +925,8 @@ where
     /// frequency is invalid, this call will panic.
     #[inline]
     pub fn enable(self) -> EnabledDpll<D, I> {
-        let input_freq = self.input_freq();
-        let output_freq = self.output_freq();
+        let input_freq = self.input_freq().to_Hz();
+        let output_freq = self.output_freq().to_Hz();
         if input_freq < 32_000 || input_freq > 3_200_000 {
             panic!("Invalid DPLL input frequency");
         }
